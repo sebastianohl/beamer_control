@@ -1,0 +1,20 @@
+menu "beamer_control Configuration"
+
+config WIFI_SSID
+    string "WIFI SSID"
+config WIFI_PASSWORD
+    string "WIFI Password"
+
+config MQTT_SERVER
+    string "MQTT Server (IP)"
+config MQTT_PORT
+    int "MQTT Port"
+    default 1883
+config MQTT_ID
+    string "MQTT Client ID"
+config MQTT_USER
+    string "MQTT User"
+config MQTT_PASSWORD
+    string "MQTT Passowrd"
+
+endmenu
