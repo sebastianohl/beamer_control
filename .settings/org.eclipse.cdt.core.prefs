@@ -1,4 +1,10 @@
 eclipse.preferences.version=1
+environment/project/cdt.managedbuild.toolchain.gnu.base.1173714220/ESPBAUD/delimiter=\:
+environment/project/cdt.managedbuild.toolchain.gnu.base.1173714220/ESPBAUD/operation=append
+environment/project/cdt.managedbuild.toolchain.gnu.base.1173714220/ESPBAUD/value=921600
+environment/project/cdt.managedbuild.toolchain.gnu.base.1173714220/ESPPORT/delimiter=\:
+environment/project/cdt.managedbuild.toolchain.gnu.base.1173714220/ESPPORT/operation=append
+environment/project/cdt.managedbuild.toolchain.gnu.base.1173714220/ESPPORT/value=/dev/ttyUSB0
 environment/project/cdt.managedbuild.toolchain.gnu.base.1173714220/IDF_PATH/delimiter=\:
 environment/project/cdt.managedbuild.toolchain.gnu.base.1173714220/IDF_PATH/operation=replace
 environment/project/cdt.managedbuild.toolchain.gnu.base.1173714220/IDF_PATH/value=/home/ohli/esp/ESP8266_RTOS_SDK

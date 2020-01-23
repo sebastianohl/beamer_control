@@ -26,9 +26,9 @@ execute_process(
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
-add_definitions("-DGIT_COMMIT_HASH=\"${GIT_COMMIT_HASH}\"")
-add_definitions("-DGIT_BRANCH=\"${GIT_BRANCH}\"")
-add_definitions("-DGIT_URL=\"${GIT_URL}\"")
+#add_definitions("-DGIT_COMMIT_HASH=\"${GIT_COMMIT_HASH}\"")
+#add_definitions("-DGIT_BRANCH=\"${GIT_BRANCH}\"")
+#add_definitions("-DGIT_URL=\"${GIT_URL}\"")
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project(beamer_control)
