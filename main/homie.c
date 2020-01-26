@@ -34,7 +34,7 @@ void homie_init(homie_handle_t *handle)
     esp_mqtt_client_publish(handle->mqtt_client, buf_topic, buf_value,
                             strlen(buf_value), 1, 1);
     sprintf(buf_topic, "homie/%s/$implementation", handle->deviceid);
-    sprintf(buf_value, "esp32s");
+    sprintf(buf_value, "esp8266");
     esp_mqtt_client_publish(handle->mqtt_client, buf_topic, buf_value,
                             strlen(buf_value), 1, 1);
     sprintf(buf_topic, "homie/%s/$stats", handle->deviceid);
@@ -135,7 +135,6 @@ void homie_init(homie_handle_t *handle)
             {
             	sprintf(buf_topic, "homie/%s/%s/%s/set", handle->deviceid,
                                 node->id, prop->id);
-            	printf("subscribe to %s\n", buf_topic);
             	esp_mqtt_client_subscribe(handle->mqtt_client, buf_topic, 1);
             }
         }

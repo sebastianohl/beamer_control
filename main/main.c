@@ -8,9 +8,13 @@
 #include "esp_log.h"
 #include "nvs_flash.h"
 
+
 #include "mqtt_client.h"
 
+static const char *TAG = "beamer-control";
+
 #include "homie.h"
+#include "uart.h"
 
 #define STR_(X) #X
 #define STR(X) STR_(X)
@@ -19,35 +23,50 @@ static EventGroupHandle_t wifi_event_group;
 static EventGroupHandle_t mqtt_event_group;
 
 static esp_mqtt_client_handle_t mqtt_client = NULL;
+
 const static int MQTT_CONNECTED_BIT = BIT0;
 
-void update_data(struct homie_handle_s *handle, int node, int property);
+void update_power(struct homie_handle_s *handle, int node, int property);
+void write_power(struct homie_handle_s *handle, int node, int property, const char *data, int data_len);
 
+uart_handle_t uart = {
+		.config = {
+		        .baud_rate = 9600,
+		        .data_bits = UART_DATA_8_BITS,
+		        .parity = UART_PARITY_DISABLE,
+		        .stop_bits = UART_STOP_BITS_1,
+		        .flow_ctrl = UART_HW_FLOWCTRL_DISABLE
+		},
+		.wait_ticks = 5000 / portTICK_PERIOD_MS,
+};
 homie_handle_t homie = {
     .deviceid = "beamer-control",
     .devicename = "Beamer Control",
     .update_interval = 0, /* set to 0 to workaround openhab problem of taking device offline */
     .num_nodes = 1,
+	.firmware = "foo",
+	.firmware_version = "bar",
 	//       .firmware = GIT_URL,
 	//       .firmware_version = GIT_BRANCH" "GIT_COMMIT_HASH,
 	    .update_interval = 0, /* set to 0 to workaround openhab problem of taking device offline */
 	    .num_nodes = 1,
 	    .nodes =
 	        {
-	            {.id = "inflow-floor-heating",
-	             .name = "Inflow Floor Heating",
-	             .type = "ds18b20",
+	            {.id = "epson-beamer",
+	             .name = "Epson Beamer",
+	             .type = "TW3600",
 	             .num_properties = 1,
 	             .properties =
 	                 {
 	                     {
-	                         .id = "temperature",
-	                         .name = "Temperature",
-	                         .settable = HOMIE_FALSE,
+	                         .id = "power",
+	                         .name = "Power",
+	                         .settable = HOMIE_TRUE,
 	                         .retained = HOMIE_TRUE,
-	                         .unit = "°C",
-	                         .datatype = HOMIE_FLOAT,
-	                         .read_property_cbk = &update_data,
+	                         .unit = " ",
+	                         .datatype = HOMIE_BOOL,
+	                         .read_property_cbk = &update_power,
+							 .write_property_cbk = &write_power,
 	                     },
 	                 }
 	            }
@@ -57,7 +76,6 @@ homie_handle_t homie = {
 
 int wifi_retry_count = 0;
 const int WIFI_CONNECTED_BIT = BIT0;
-static const char *TAG = "beamer-control";
 
 static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event)
 {
@@ -75,10 +93,10 @@ static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event)
         ESP_LOGI(TAG, "MQTT_EVENT_SUBSCRIBED, msg_id=%d", event->msg_id);
         break;
     case MQTT_EVENT_UNSUBSCRIBED:
-        ESP_LOGI(TAG, "MQTT_EVENT_UNSUBSCRIBED, msg_id=%d", event->msg_id);
+    	ESP_LOGI(TAG, "MQTT_EVENT_UNSUBSCRIBED, msg_id=%d", event->msg_id);
         break;
     case MQTT_EVENT_PUBLISHED:
-        ESP_LOGI(TAG, "MQTT_EVENT_PUBLISHED, msg_id=%d", event->msg_id);
+    	ESP_LOGI(TAG, "MQTT_EVENT_PUBLISHED, msg_id=%d", event->msg_id);
         break;
     case MQTT_EVENT_DATA:
         ESP_LOGI(TAG, "MQTT_EVENT_DATA");
@@ -200,12 +218,28 @@ static void mqtt_app_start(void)
     ESP_LOGI(TAG, "Note free memory: %d bytes", esp_get_free_heap_size());
 }
 
-void update_data(struct homie_handle_s *handle, int node,
-        int property)
+void update_power(struct homie_handle_s *handle, int node, int property)
 {
+	ESP_LOGI(TAG, "update power");
+	const char cmd[] = ":PWR?\n\0";
+	uart_write(&uart, cmd, strlen(cmd));
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
+
     char value[100];
-    sprintf(value, "%d", 1);
-    homie_publish_property_value(handle, node, property, value);
+    size_t len = 100;
+    uart_get_buffer(&uart, &value, &len);
+	ESP_LOGI(TAG, "update power got %d %.*s", len, len, value);
+	if (len > 0)
+	{
+		homie_publish_property_value(handle, node, property, value);
+	}
+}
+
+void write_power(struct homie_handle_s *handle, int node, int property, const char *data, int data_len)
+{
+	ESP_LOGI(TAG, "write power %s", data);
+	const char cmd[] = ":PWR ON\n\0";
+	uart_write(&uart, cmd, strlen(cmd));
 }
 
 void app_main(void)
@@ -233,8 +267,12 @@ void app_main(void)
                         portMAX_DELAY);
 
     homie.mqtt_client = mqtt_client;
+    printf("homie init");
     homie_init(&homie);
 
+    printf("uart init");
+
+    uart_init(&uart);
 
     for (int i = 24*60*60/5; i >= 0; i--)
     {
@@ -244,7 +282,8 @@ void app_main(void)
 
         homie_cycle(&homie);
 
-        vTaskDelay(5000 / portTICK_PERIOD_MS);
+        uart_cycle(&uart); // is waiting 5 sec
+        //vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
     printf("Restarting now.\n");
     fflush(stdout);
