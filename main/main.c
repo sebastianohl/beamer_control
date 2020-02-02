@@ -1,3 +1,5 @@
+//#define LOG_LOCAL_LEVEL ESP_LOG_ERROR
+
 #include <string.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -30,7 +32,14 @@ void update_power(struct homie_handle_s *handle, int node, int property);
 void write_power(struct homie_handle_s *handle, int node, int property, const char *data, int data_len);
 
 uart_handle_t uart = {
-		.config = {
+		.configRx = {
+		        .baud_rate = 9600,
+		        .data_bits = UART_DATA_8_BITS,
+		        .parity = UART_PARITY_DISABLE,
+		        .stop_bits = UART_STOP_BITS_1,
+		        .flow_ctrl = UART_HW_FLOWCTRL_DISABLE
+		},
+		.configTx = {
 		        .baud_rate = 9600,
 		        .data_bits = UART_DATA_8_BITS,
 		        .parity = UART_PARITY_DISABLE,
@@ -99,12 +108,12 @@ static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event)
     	ESP_LOGI(TAG, "MQTT_EVENT_PUBLISHED, msg_id=%d", event->msg_id);
         break;
     case MQTT_EVENT_DATA:
-        ESP_LOGI(TAG, "MQTT_EVENT_DATA");
-        printf("TOPIC=%.*s\r\n", event->topic_len, event->topic);
-        printf("DATA='%.*s'\r\n", event->data_len, event->data);
-        printf("ID=%d, total_len=%d, data_len=%d, current_data_offset=%d\n",
-               event->msg_id, event->total_data_len, event->data_len,
-               event->current_data_offset);
+        //ESP_LOGI(TAG, "MQTT_EVENT_DATA");
+        //printf("TOPIC=%.*s\r\n", event->topic_len, event->topic);
+        //printf("DATA='%.*s'\r\n", event->data_len, event->data);
+        //printf("ID=%d, total_len=%d, data_len=%d, current_data_offset=%d\n",
+        //       event->msg_id, event->total_data_len, event->data_len,
+        //       event->current_data_offset);
 
         homie_handle_mqtt_incoming_event(&homie, event);
 
@@ -220,31 +229,41 @@ static void mqtt_app_start(void)
 
 void update_power(struct homie_handle_s *handle, int node, int property)
 {
-	ESP_LOGI(TAG, "update power");
-	const char cmd[] = ":PWR?\n\0";
+	const char cmd[] = "PWR?\r\n\0";
 	uart_write(&uart, cmd, strlen(cmd));
     vTaskDelay(1000 / portTICK_PERIOD_MS);
 
-    char value[100];
-    size_t len = 100;
-    uart_get_buffer(&uart, &value, &len);
-	ESP_LOGI(TAG, "update power got %d %.*s", len, len, value);
-	if (len > 0)
+    char value[100] = {0};
+    size_t len = 99;
+    uart_get_buffer(&uart, value, &len);
+    int status = 0;
+    if (len > 0 && sscanf(value, "PWR=%d", &status) == 1)
 	{
-		homie_publish_property_value(handle, node, property, value);
+    	ESP_LOGI(TAG, "power status %d", status);
+        char value[100];
+        sprintf(value, "%s", (status == 0)?"false":"true");
+
+    	homie_publish_property_value(handle, node, property, value);
 	}
 }
 
 void write_power(struct homie_handle_s *handle, int node, int property, const char *data, int data_len)
 {
-	ESP_LOGI(TAG, "write power %s", data);
-	const char cmd[] = ":PWR ON\n\0";
-	uart_write(&uart, cmd, strlen(cmd));
+	if (strncmp(data, "true", data_len) == 0)
+	{
+		const char cmd[] = "PWR ON\r\n\0";
+		ESP_LOGI(TAG, "set pwr got %d %s", strlen(cmd) , cmd);
+		uart_write(&uart, cmd, strlen(cmd));
+	} else {
+		const char cmd[] = "PWR OFF\r\n\0";
+		ESP_LOGI(TAG, "set pwr got %d %s", strlen(cmd) , cmd);
+		uart_write(&uart, cmd, strlen(cmd));
+	}
 }
 
 void app_main(void)
 {
-    printf("starting....\n");
+	ESP_LOGI(TAG,"starting....\n");
 
     //Initialize NVS
     esp_err_t ret = nvs_flash_init();
@@ -256,27 +275,27 @@ void app_main(void)
 
     connect_to_wifi();
 
-    printf("wait for wifi connect");
+    ESP_LOGI(TAG,"wait for wifi connect");
     xEventGroupWaitBits(wifi_event_group, WIFI_CONNECTED_BIT, false, true,
                         portMAX_DELAY);
 
     mqtt_app_start();
 
-    printf("wait for mqtt connect");
+    ESP_LOGI(TAG,"wait for mqtt connect");
     xEventGroupWaitBits(mqtt_event_group, MQTT_CONNECTED_BIT, false, true,
                         portMAX_DELAY);
 
     homie.mqtt_client = mqtt_client;
-    printf("homie init");
+    ESP_LOGI(TAG,"homie init");
     homie_init(&homie);
 
-    printf("uart init");
+    ESP_LOGI(TAG,"uart init");
 
     uart_init(&uart);
 
     for (int i = 24*60*60/5; i >= 0; i--)
     {
-        printf("Restarting in %d seconds...\n", i * 5);
+    	ESP_LOGI(TAG,"Restarting in %d seconds...\n", i * 5);
 
         homie.uptime += 5;
 
@@ -285,7 +304,7 @@ void app_main(void)
         uart_cycle(&uart); // is waiting 5 sec
         //vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
-    printf("Restarting now.\n");
+    ESP_LOGI(TAG, "Restarting now.\n");
     fflush(stdout);
     esp_restart();
 }
