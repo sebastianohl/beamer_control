@@ -30,6 +30,8 @@ const static int MQTT_CONNECTED_BIT = BIT0;
 
 void update_power(struct homie_handle_s *handle, int node, int property);
 void write_power(struct homie_handle_s *handle, int node, int property, const char *data, int data_len);
+void update_source(struct homie_handle_s *handle, int node, int property);
+void write_source(struct homie_handle_s *handle, int node, int property, const char *data, int data_len);
 
 uart_handle_t uart = {
 		.configRx = {
@@ -48,23 +50,35 @@ uart_handle_t uart = {
 		},
 		.wait_ticks = 5000 / portTICK_PERIOD_MS,
 };
+
+struct beamer_state_s
+{
+	bool state;
+	TickType_t last_change;
+	SemaphoreHandle_t mutex;
+};
+typedef struct beamer_state_s beamer_state_t;
+
+beamer_state_t beamer_state = {
+		.state = HOMIE_FALSE,
+		.last_change = 0,
+};
+
 homie_handle_t homie = {
     .deviceid = "beamer-control",
     .devicename = "Beamer Control",
     .update_interval = 0, /* set to 0 to workaround openhab problem of taking device offline */
-    .num_nodes = 1,
 	.firmware = "foo",
 	.firmware_version = "bar",
 	//       .firmware = GIT_URL,
 	//       .firmware_version = GIT_BRANCH" "GIT_COMMIT_HASH,
-	    .update_interval = 0, /* set to 0 to workaround openhab problem of taking device offline */
-	    .num_nodes = 1,
-	    .nodes =
+    .num_nodes = 1,
+    .nodes =
 	        {
 	            {.id = "epson-beamer",
 	             .name = "Epson Beamer",
 	             .type = "TW3600",
-	             .num_properties = 1,
+	             .num_properties = 2,
 	             .properties =
 	                 {
 	                     {
@@ -76,6 +90,18 @@ homie_handle_t homie = {
 	                         .datatype = HOMIE_BOOL,
 	                         .read_property_cbk = &update_power,
 							 .write_property_cbk = &write_power,
+							 .user_data = &beamer_state,
+	                     },
+	                     {
+	                         .id = "source",
+	                         .name = "source",
+	                         .settable = HOMIE_TRUE,
+	                         .retained = HOMIE_TRUE,
+	                         .unit = " ",
+	                         .datatype = HOMIE_INTEGER,
+	                         .read_property_cbk = &update_source,
+							 .write_property_cbk = &write_source,
+							 .user_data = &beamer_state,
 	                     },
 	                 }
 	            }
@@ -229,35 +255,103 @@ static void mqtt_app_start(void)
 
 void update_power(struct homie_handle_s *handle, int node, int property)
 {
-	const char cmd[] = "PWR?\r\n\0";
-	uart_write(&uart, cmd, strlen(cmd));
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
-
-    char value[100] = {0};
-    size_t len = 99;
-    uart_get_buffer(&uart, value, &len);
-    int status = 0;
-    if (len > 0 && sscanf(value, "PWR=%d", &status) == 1)
+	if (xSemaphoreTake(beamer_state.mutex, (portTickType)portMAX_DELAY) == pdTRUE)
 	{
-    	ESP_LOGI(TAG, "power status %d", status);
-        char value[100];
-        sprintf(value, "%s", (status == 0)?"false":"true");
+		if ((xTaskGetTickCount() - 25000 / portTICK_PERIOD_MS) > beamer_state.last_change)
+		{
+			const char cmd[] = "PWR?\r\n\0";
+			uart_write(&uart, cmd, strlen(cmd));
 
-    	homie_publish_property_value(handle, node, property, value);
+			uart_cycle(&uart);
+
+			char value[100] = {0};
+			size_t len = 99;
+			uart_get_buffer(&uart, value, &len);
+			int status = 0;
+			ESP_LOGI(TAG, "pwr value %d %s", len, value);
+			if (len > 0 && sscanf(value, "PWR=%d", &status) == 1)
+			{
+				beamer_state.state = (status == 0)?HOMIE_FALSE:HOMIE_TRUE;
+				ESP_LOGI(TAG, "power status %d", status);
+			}
+		} else {
+			ESP_LOGI(TAG, "skip power status request");
+		}
+		char value[100];
+		sprintf(value, "%s", (beamer_state.state == HOMIE_FALSE)?"false":"true");
+		ESP_LOGI(TAG, "power status %s", value);
+
+		homie_publish_property_value(handle, node, property, value);
+		xSemaphoreGive(beamer_state.mutex);
 	}
 }
 
 void write_power(struct homie_handle_s *handle, int node, int property, const char *data, int data_len)
 {
-	if (strncmp(data, "true", data_len) == 0)
+	if (xSemaphoreTake(beamer_state.mutex, (portTickType)portMAX_DELAY) == pdTRUE)
 	{
-		const char cmd[] = "PWR ON\r\n\0";
-		ESP_LOGI(TAG, "set pwr got %d %s", strlen(cmd) , cmd);
-		uart_write(&uart, cmd, strlen(cmd));
-	} else {
-		const char cmd[] = "PWR OFF\r\n\0";
-		ESP_LOGI(TAG, "set pwr got %d %s", strlen(cmd) , cmd);
-		uart_write(&uart, cmd, strlen(cmd));
+		beamer_state.last_change = xTaskGetTickCount();
+		if (strncmp(data, "true", data_len) == 0)
+		{
+			beamer_state.state = HOMIE_TRUE;
+			const char cmd[] = "PWR ON\r\n\0";
+			ESP_LOGI(TAG, "set pwr got %d %s", strlen(cmd) , cmd);
+			uart_write(&uart, cmd, strlen(cmd));
+		} else {
+			beamer_state.state = HOMIE_FALSE;
+			const char cmd[] = "PWR OFF\r\n\0";
+			ESP_LOGI(TAG, "set pwr got %d %s", strlen(cmd) , cmd);
+			uart_write(&uart, cmd, strlen(cmd));
+		}
+		xSemaphoreGive(beamer_state.mutex);
+	}
+}
+
+void update_source(struct homie_handle_s *handle, int node, int property)
+{
+	if (xSemaphoreTake(beamer_state.mutex, (portTickType)portMAX_DELAY) == pdTRUE)
+	{
+		if ((xTaskGetTickCount() - 25000 / portTICK_PERIOD_MS) > beamer_state.last_change && beamer_state.state == HOMIE_TRUE)
+		{
+			const char cmd[] = "SOURCE?\r\n\0";
+			uart_write(&uart, cmd, strlen(cmd));
+
+			uart_cycle(&uart);
+
+			char value[100] = {0};
+			size_t len = 99;
+			uart_get_buffer(&uart, value, &len);
+			int source = 0;
+			ESP_LOGI(TAG, "source value %d %s", len, value);
+			if (len > 0 && sscanf(value, "SOURCE=%x", &source) == 1)
+			{
+				ESP_LOGI(TAG, "source %d", source);
+
+				char value[100];
+				sprintf(value, "%d", source);
+				homie_publish_property_value(handle, node, property, value);
+			}
+		} else {
+			ESP_LOGI(TAG, "skip source request -> power off");
+		}
+		xSemaphoreGive(beamer_state.mutex);
+	}
+}
+
+void write_source(struct homie_handle_s *handle, int node, int property, const char *data, int data_len)
+{
+	if (xSemaphoreTake(beamer_state.mutex, (portTickType)portMAX_DELAY) == pdTRUE)
+	{
+		char cmd[100] = {0};
+		snprintf(cmd, 100, "%.*s", data_len, data);
+		int source = 0;
+		if (data_len > 0 && sscanf(cmd, "%d", &source))
+		{
+			snprintf(cmd, 99, "SOURCE %X\r\n", source);
+			ESP_LOGI(TAG, "set source got %d %s", strlen(cmd) , cmd);
+			uart_write(&uart, cmd, strlen(cmd));
+		}
+		xSemaphoreGive(beamer_state.mutex);
 	}
 }
 
@@ -272,6 +366,8 @@ void app_main(void)
       ret = nvs_flash_init();
     }
     ESP_ERROR_CHECK(ret);
+
+    beamer_state.mutex = xSemaphoreCreateMutex();
 
     connect_to_wifi();
 
@@ -302,7 +398,6 @@ void app_main(void)
         homie_cycle(&homie);
 
         uart_cycle(&uart); // is waiting 5 sec
-        //vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
     ESP_LOGI(TAG, "Restarting now.\n");
     fflush(stdout);
