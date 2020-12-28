@@ -1,4 +1,6 @@
 #include "homie.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 
 void homie_init(homie_handle_t *handle)
 {

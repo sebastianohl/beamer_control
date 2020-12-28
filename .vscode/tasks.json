@@ -1,0 +1,109 @@
+{
+    "tasks": [
+        {
+            "type": "shell",
+            "label": "C/C++: build",
+            "command": "make",
+            "args": [
+                "all",
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "env":{
+                    "EDF_HOME": "${workspaceFolder}/../ESP8266_RTOS_SDK/",
+                    "IDF_PATH":"${workspaceFolder}/../ESP8266_RTOS_SDK/",
+                    "ESPBAUD": "921600",
+                    "ESPPORT": "/dev/ttyUSB0",
+                    "PATH": "${workspaceFolder}/../xtensa-lx106-elf/bin/:${env:PATH}",
+                    "python": "python3",
+                }
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "type": "shell",
+            "label": "C/C++: clean",
+            "command": "make",
+            "args": [
+                "clean",
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "env":{
+                    "EDF_HOME": "${workspaceFolder}/../ESP8266_RTOS_SDK/",
+                    "IDF_PATH":"${workspaceFolder}/../ESP8266_RTOS_SDK/",
+                    "ESPBAUD": "921600",
+                    "ESPPORT": "/dev/ttyUSB0",
+                    "PATH": "${workspaceFolder}/../xtensa-lx106-elf/bin/:${env:PATH}",
+                    "python": "python3",
+                }
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "type": "shell",
+            "label": "C/C++: flash",
+            "command": "make",
+            "args": [
+                "flash",
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "env":{
+                    "EDF_HOME": "${workspaceFolder}/../ESP8266_RTOS_SDK/",
+                    "IDF_PATH":"${workspaceFolder}/../ESP8266_RTOS_SDK/",
+                    "ESPBAUD": "921600",
+                    "ESPPORT": "/dev/ttyUSB0",
+                    "PATH": "${workspaceFolder}/../xtensa-lx106-elf/bin/:${env:PATH}",
+                    "python": "python3",
+                }
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "type": "shell",
+            "label": "C/C++: cmake",
+            "command": "cmake",
+            "args": [
+                "CMakeLists.txt",
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "env":{
+                    "EDF_HOME": "${workspaceFolder}/../ESP8266_RTOS_SDK/",
+                    "IDF_PATH":"${workspaceFolder}/../ESP8266_RTOS_SDK/",
+                    "ESPBAUD": "921600",
+                    "ESPPORT": "/dev/ttyUSB0",
+                    "PATH": "${workspaceFolder}/../xtensa-lx106-elf/bin/:${env:PATH}",
+                    "python": "python3",
+                }
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        }
+    ],
+    "version": "2.0.0"
+}

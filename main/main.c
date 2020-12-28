@@ -134,12 +134,12 @@ static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event)
     	ESP_LOGI(TAG, "MQTT_EVENT_PUBLISHED, msg_id=%d", event->msg_id);
         break;
     case MQTT_EVENT_DATA:
-        //ESP_LOGI(TAG, "MQTT_EVENT_DATA");
-        //printf("TOPIC=%.*s\r\n", event->topic_len, event->topic);
-        //printf("DATA='%.*s'\r\n", event->data_len, event->data);
-        //printf("ID=%d, total_len=%d, data_len=%d, current_data_offset=%d\n",
-        //       event->msg_id, event->total_data_len, event->data_len,
-        //       event->current_data_offset);
+        ESP_LOGI(TAG, "MQTT_EVENT_DATA");
+        printf("TOPIC=%.*s\r\n", event->topic_len, event->topic);
+        printf("DATA='%.*s'\r\n", event->data_len, event->data);
+        printf("ID=%d, total_len=%d, data_len=%d, current_data_offset=%d\n",
+               event->msg_id, event->total_data_len, event->data_len,
+               event->current_data_offset);
 
         homie_handle_mqtt_incoming_event(&homie, event);
 
@@ -159,7 +159,8 @@ static esp_err_t wifi_event_handler(void *ctx, system_event_t *event)
     /* For accessing reason codes in case of disconnection */
     system_event_info_t *info = &event->event_info;
 
-    switch(event->event_id) {
+    switch (event->event_id)
+    {
     case SYSTEM_EVENT_STA_START:
         esp_wifi_connect();
         break;
@@ -172,20 +173,23 @@ static esp_err_t wifi_event_handler(void *ctx, system_event_t *event)
         xEventGroupSetBits(wifi_event_group, WIFI_CONNECTED_BIT);
         break;
     case SYSTEM_EVENT_AP_STACONNECTED:
-        ESP_LOGI(TAG, "station:"MACSTR" join, AID=%d",
+        ESP_LOGI(TAG, "station:" MACSTR " join, AID=%d",
                  MAC2STR(event->event_info.sta_connected.mac),
                  event->event_info.sta_connected.aid);
         break;
     case SYSTEM_EVENT_AP_STADISCONNECTED:
-        ESP_LOGI(TAG, "station:"MACSTR"leave, AID=%d",
+        ESP_LOGI(TAG, "station:" MACSTR "leave, AID=%d",
                  MAC2STR(event->event_info.sta_disconnected.mac),
                  event->event_info.sta_disconnected.aid);
         break;
     case SYSTEM_EVENT_STA_DISCONNECTED:
         ESP_LOGE(TAG, "Disconnect reason : %d", info->disconnected.reason);
-        if (info->disconnected.reason == WIFI_REASON_BASIC_RATE_NOT_SUPPORT) {
+        if (info->disconnected.reason == WIFI_REASON_BASIC_RATE_NOT_SUPPORT)
+        {
             /*Switch to 802.11 bgn mode */
-            esp_wifi_set_protocol(ESP_IF_WIFI_STA, WIFI_PROTOCAL_11B | WIFI_PROTOCAL_11G | WIFI_PROTOCAL_11N);
+            esp_wifi_set_protocol(ESP_IF_WIFI_STA, WIFI_PROTOCOL_11B |
+                                                       WIFI_PROTOCOL_11G |
+                                                       WIFI_PROTOCOL_11N);
         }
         esp_wifi_connect();
         xEventGroupClearBits(wifi_event_group, WIFI_CONNECTED_BIT);
@@ -210,7 +214,7 @@ void connect_to_wifi()
 
     tcpip_adapter_init();
 
-    ESP_ERROR_CHECK(esp_event_loop_init(wifi_event_handler, NULL) );
+    ESP_ERROR_CHECK(esp_event_loop_init(wifi_event_handler, NULL));
 
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
