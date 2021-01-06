@@ -5,18 +5,10 @@
             "label": "C/C++: build",
             "command": "make",
             "args": [
-                "all",
+                "all"
             ],
             "options": {
-                "cwd": "${workspaceFolder}",
-                "env":{
-                    "EDF_HOME": "${workspaceFolder}/../ESP8266_RTOS_SDK/",
-                    "IDF_PATH":"${workspaceFolder}/../ESP8266_RTOS_SDK/",
-                    "ESPBAUD": "921600",
-                    "ESPPORT": "/dev/ttyUSB0",
-                    "PATH": "${workspaceFolder}/../xtensa-lx106-elf/bin/:${env:PATH}",
-                    "python": "python3",
-                }
+                "cwd": "${workspaceFolder}"
             },
             "problemMatcher": [
                 "$gcc"
@@ -31,18 +23,10 @@
             "label": "C/C++: clean",
             "command": "make",
             "args": [
-                "clean",
+                "clean"
             ],
             "options": {
-                "cwd": "${workspaceFolder}",
-                "env":{
-                    "EDF_HOME": "${workspaceFolder}/../ESP8266_RTOS_SDK/",
-                    "IDF_PATH":"${workspaceFolder}/../ESP8266_RTOS_SDK/",
-                    "ESPBAUD": "921600",
-                    "ESPPORT": "/dev/ttyUSB0",
-                    "PATH": "${workspaceFolder}/../xtensa-lx106-elf/bin/:${env:PATH}",
-                    "python": "python3",
-                }
+                "cwd": "${workspaceFolder}"
             },
             "problemMatcher": [
                 "$gcc"
@@ -57,18 +41,10 @@
             "label": "C/C++: flash",
             "command": "make",
             "args": [
-                "flash",
+                "flash"
             ],
             "options": {
-                "cwd": "${workspaceFolder}",
-                "env":{
-                    "EDF_HOME": "${workspaceFolder}/../ESP8266_RTOS_SDK/",
-                    "IDF_PATH":"${workspaceFolder}/../ESP8266_RTOS_SDK/",
-                    "ESPBAUD": "921600",
-                    "ESPPORT": "/dev/ttyUSB0",
-                    "PATH": "${workspaceFolder}/../xtensa-lx106-elf/bin/:${env:PATH}",
-                    "python": "python3",
-                }
+                "cwd": "${workspaceFolder}"
             },
             "problemMatcher": [
                 "$gcc"
@@ -83,18 +59,10 @@
             "label": "C/C++: cmake",
             "command": "cmake",
             "args": [
-                "CMakeLists.txt",
+                "CMakeLists.txt"
             ],
             "options": {
-                "cwd": "${workspaceFolder}",
-                "env":{
-                    "EDF_HOME": "${workspaceFolder}/../ESP8266_RTOS_SDK/",
-                    "IDF_PATH":"${workspaceFolder}/../ESP8266_RTOS_SDK/",
-                    "ESPBAUD": "921600",
-                    "ESPPORT": "/dev/ttyUSB0",
-                    "PATH": "${workspaceFolder}/../xtensa-lx106-elf/bin/:${env:PATH}",
-                    "python": "python3",
-                }
+                "cwd": "${workspaceFolder}"
             },
             "problemMatcher": [
                 "$gcc"
