@@ -314,7 +314,7 @@ void app_main(void)
     homie.mqtt_client = mqtt_client;
 
     ESP_LOGI(TAG, "uart init");
-    #ifdef DEBUG_SERIAL
+    #ifndef DEBUG_SERIAL
     uart_init(&uart);
     #endif
 
@@ -340,7 +340,7 @@ void app_main(void)
         if ((uxBits & MQTT_CONNECTED_BIT) != 0)
         {
             ESP_LOGI(TAG, "homie cycle");
-            #ifdef DEBUG_SERIAL
+            #ifndef DEBUG_SERIAL
             homie_cycle(&homie);
             #endif
         }
