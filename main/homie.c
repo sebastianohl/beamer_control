@@ -1,6 +1,7 @@
 #include "homie.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "esp_log.h"
 
 void homie_init(homie_handle_t *handle)
 {
@@ -142,29 +143,37 @@ void homie_init(homie_handle_t *handle)
         }
     }
 }
-
+#define TAG "mqtt"
 void homie_cycle(homie_handle_t *handle)
 {
     char buf_value[255] = {0};
     char buf_topic[255] = {0};
 
     handle->uptime++;
+ESP_LOGI(TAG, "%d", __LINE__);
 
     sprintf(buf_topic, "homie/%s/$stats/uptime", handle->deviceid);
+ESP_LOGI(TAG, "%d", __LINE__);
     sprintf(buf_value, "%d", handle->uptime);
+ESP_LOGI(TAG, "%d", __LINE__);
     esp_mqtt_client_publish(handle->mqtt_client, buf_topic, buf_value,
                             strlen(buf_value), 1, 1);
+ESP_LOGI(TAG, "%d", __LINE__);
 
     for (int n = 0; n < handle->num_nodes; ++n)
     {
+ESP_LOGI(TAG, "%d", __LINE__);
         const homie_node_t *const node = &handle->nodes[n];
         for (int p = 0; p < node->num_properties; ++p)
         {
+ESP_LOGI(TAG, "%d", __LINE__);
             const homie_node_property_t *const prop = &node->properties[p];
             if (prop->read_property_cbk)
                 prop->read_property_cbk(handle, n, p);
         }
+ESP_LOGI(TAG, "%d", __LINE__);
     }
+ESP_LOGI(TAG, "%d", __LINE__);
 }
 
 void homie_handle_mqtt_incoming_event(homie_handle_t *handle,
