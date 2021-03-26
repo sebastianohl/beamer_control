@@ -325,7 +325,7 @@ void app_main(void)
     for (int i = 24 * 60 * 60 / 5; i >= 0; i--)
     {
         EventBits_t uxBits;
-        ESP_LOGI(TAG, "Restarting in %d seconds...\n", i * 5);
+        ESP_LOGD(TAG, "Restarting in %d seconds...\n", i * 5);
 
         homie.uptime += 5;
 
