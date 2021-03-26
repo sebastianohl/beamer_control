@@ -48,12 +48,12 @@ void update_power(struct homie_handle_s *handle, int node, int property)
         }
         else
         {
-            ESP_LOGI(TAG, "skip power status request");
+            ESP_LOGD(TAG, "skip power status request");
         }
         char value[100];
         sprintf(value, "%s",
                 (beamer_state.state == HOMIE_FALSE) ? "false" : "true");
-        ESP_LOGI(TAG, "power status %s", value);
+        ESP_LOGD(TAG, "power status %s", value);
 
         homie_publish_property_value(handle, node, property, value);
         xSemaphoreGive(beamer_state.mutex);
@@ -103,7 +103,7 @@ void update_source(struct homie_handle_s *handle, int node, int property)
             size_t len = 99;
             uart_get_buffer(&uart, value, &len);
             int source = 0;
-            ESP_LOGI(TAG, "source value %d %s", len, value);
+            ESP_LOGD(TAG, "source value %d %s", len, value);
             if (len > 0 && sscanf(value, "SOURCE=%x", &source) == 1)
             {
                 ESP_LOGI(TAG, "source %d", source);
@@ -115,7 +115,7 @@ void update_source(struct homie_handle_s *handle, int node, int property)
         }
         else
         {
-            ESP_LOGI(TAG, "skip source request -> power off");
+            ESP_LOGD(TAG, "skip source request -> power off");
         }
         xSemaphoreGive(beamer_state.mutex);
     }

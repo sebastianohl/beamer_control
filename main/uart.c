@@ -19,7 +19,7 @@ void uart_cycle(uart_handle_t *handle)
 
 	// Waiting for UART event.
 	if (xQueueReceive(handle->queue, (void *)&event, handle->wait_ticks)) {
-	    //ESP_LOGI(TAG, "event %d", event.type);
+	    ESP_LOGD(TAG, "event %d", event.type);
 		switch (event.type) {
 			// Event of UART receving data
 			// We'd better handler data event fast, there would be much more data events than
@@ -52,10 +52,12 @@ void uart_cycle(uart_handle_t *handle)
 				break;
 
 			case UART_PARITY_ERR:
+            ESP_LOGE(TAG, "uart parity error");
 				break;
 
 			// Event of UART frame error
 			case UART_FRAME_ERR:
+            ESP_LOGE(TAG, "uart frame error");
 				break;
 
 			// Others

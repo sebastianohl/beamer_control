@@ -14,6 +14,7 @@
 #include "ota.h"
 
 #include "mqtt_client.h"
+#include "remote_log.h"
 
 //#define DEBUG_SERIAL
 
@@ -117,10 +118,10 @@ static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event)
         ESP_LOGI(TAG, "MQTT_EVENT_UNSUBSCRIBED, msg_id=%d", event->msg_id);
         break;
     case MQTT_EVENT_PUBLISHED:
-        ESP_LOGI(TAG, "MQTT_EVENT_PUBLISHED, msg_id=%d", event->msg_id);
+        ESP_LOGD(TAG, "MQTT_EVENT_PUBLISHED, msg_id=%d", event->msg_id);
         break;
     case MQTT_EVENT_DATA:
-        ESP_LOGI(TAG, "MQTT_EVENT_DATA");
+        ESP_LOGD(TAG, "MQTT_EVENT_DATA, topic %*.s", event->topic_len, event->topic);
         printf("TOPIC=%.*s\r\n", event->topic_len, event->topic);
         printf("DATA='%.*s'\r\n", event->data_len, event->data);
         printf("ID=%d, total_len=%d, data_len=%d, current_data_offset=%d\n",
@@ -131,10 +132,10 @@ static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event)
 
         break;
     case MQTT_EVENT_ERROR:
-        ESP_LOGI(TAG, "MQTT_EVENT_ERROR");
+        ESP_LOGE(TAG, "MQTT_EVENT_ERROR");
         break;
     default:
-        ESP_LOGI(TAG, "Other event id:%d", event->event_id);
+        ESP_LOGD(TAG, "Other event id:%d", event->event_id);
         break;
     }
     return ESP_OK;
@@ -185,6 +186,8 @@ static esp_err_t wifi_event_handler(void *ctx, system_event_t *event)
         wifi_retry_count = 0;
         xEventGroupSetBits(wifi_event_group, WIFI_CONNECTED_BIT);
 
+        start_remote_log(CONFIG_REMOTELOG_UDP_HOST, CONFIG_REMOTELOG_UDP_PORT,
+            CONFIG_REMOTELOG_SYSLOG_HOST, CONFIG_REMOTELOG_SYSLOG_PORT, CONFIG_REMOTELOG_SYSLOG_APP);
         esp_mqtt_client_start(mqtt_client);
 
         break;
@@ -207,6 +210,7 @@ static esp_err_t wifi_event_handler(void *ctx, system_event_t *event)
                                                        WIFI_PROTOCOL_11G |
                                                        WIFI_PROTOCOL_11N);
         }
+        stop_remote_log();
         esp_mqtt_client_stop(mqtt_client);
 
         xEventGroupClearBits(wifi_event_group, WIFI_CONNECTED_BIT);
@@ -325,7 +329,7 @@ void app_main(void)
 
         homie.uptime += 5;
 
-        ESP_LOGI(TAG, "test for mqtt new connect");
+        ESP_LOGD(TAG, "test for mqtt new connect");
         uxBits = xEventGroupWaitBits(mqtt_event_group, MQTT_NEW_CONNECT_BIT, true,
                                      false, 1);
         if ((uxBits & MQTT_NEW_CONNECT_BIT) != 0)

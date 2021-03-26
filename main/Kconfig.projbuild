@@ -17,4 +17,17 @@ config MQTT_USER
 config MQTT_PASSWORD
     string "MQTT Passowrd"
 
+config REMOTELOG_UDP_HOST
+    string "Remote Log UDP hostname"
+config REMOTELOG_UDP_PORT
+    int "Remote Log UDP Port"
+    default 12345
+config REMOTELOG_SYSLOG_HOST
+    string "Remote Log Syslog hostname"
+config REMOTELOG_SYSLOG_PORT
+    int "Remote Log Syslog Port"
+    default 514
+config REMOTELOG_SYSLOG_APP
+    string "Remote Log Syslog application"
+    default "beamer-control"
 endmenu
